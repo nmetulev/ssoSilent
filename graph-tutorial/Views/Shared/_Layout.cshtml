@@ -24,52 +24,24 @@
     @if (Request.IsAuthenticated)
     {
         <script src="@("https://unpkg.com/@microsoft/mgt@next/dist/bundle/mgt.es6.js")"></script>
-        <script type="text/javascript" src="https://alcdn.msauth.net/browser/2.11.2/js/msal-browser.min.js"></script>
 
         <script>
-            const msalConfig = {
-                auth: {
-                    clientId: "a6b4cb96-400e-4be7-9f77-092f1fe50928",
-                    redirectUri: "https://localhost:44375/sso"
-                }
-            }
-
-            const msalInstance = new msal.PublicClientApplication(msalConfig);
-
-            const silentRequest = {
+            mgt.Providers.globalProvider = new mgt.Msal2Provider({
+                clientId: "a6b4cb96-400e-4be7-9f77-092f1fe50928",
+                redirectUri: "https://localhost:44375/sso",
+                //loginHint: "@ViewBag.User.Email",
+                sid: "@ViewBag.Sid",
                 scopes: ["User.Read"],
-                loginHint: "@ViewBag.User.Email"
-            };
-
-            mgt.CacheService.config.isEnabled = false;
-            mgt.Providers.globalProvider = new mgt.SimpleProvider(async (scopes) => {
-                try {
-                    let accounts = msalInstance.getAllAccounts();
-                    let token = await msalInstance.acquireTokenSilent({ scopes, account: accounts[0] });
-                    return token.accessToken;
-                } catch (err) {
-                    console.log(err);
-                    return null;
-                }
+                prompt: mgt.PromptType.CONSENT,
+                loginType: mgt.LoginType.Popup
             })
 
-            let signin = async () => {
-                try {
-                    const loginResponse = await msalInstance.ssoSilent(silentRequest);
-                    mgt.Providers.globalProvider.setState(mgt.ProviderState.SignedIn);
-                } catch (err) {
-                    console.log('error', err)
-                    if (err instanceof msal.InteractionRequiredAuthError) {
-                        const loginResponse = await msalInstance.loginPopup(silentRequest).catch(error => {
-                            // handle error
-                        });
-                    } else {
-                        // handle error
-                    }
+            mgt.Providers.onProviderUpdated(() => {
+                // if we are not signed in, likely because the user needs to consent to scopes
+                if (mgt.Providers.globalProvider.state === mgt.ProviderState.SignedOut) {
+                    mgt.Providers.globalProvider.login()
                 }
-            }
-
-            signin();
+            })
         </script>
     }
     </head>

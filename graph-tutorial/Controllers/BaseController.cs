@@ -40,6 +40,7 @@ namespace graph_tutorial.Controllers
                 {
                     // Add the user to the view bag
                     ViewBag.User = tokenStore.GetUserDetails();
+                    ViewBag.Sid = tokenStore.GetSid();
                 }
                 else
                 {
